@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover"
+  >
+  <meta
+    name="theme-color"
+    content="#0E1116"
+  >
+  <meta
+    name="description"
+    content="Hevy (iOS) Edition — Treino de força, registro de cargas, séries, descansos e recordes pessoais."
+  >
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet"
+  >
+
+  <link rel="manifest" href="./manifest.json">
+  <link rel="stylesheet" href="./styles.css">
+
+  <link rel="icon" type="image/svg+xml" href="./icons/favicon.svg">
+  <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
+  <link
+    rel="apple-touch-icon"
+    sizes="180x180"
+    href="./icons/apple-touch-icon.png"
+  >
+
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Hevy Treino">
+  <meta
+    name="apple-mobile-web-app-status-bar-style"
+    content="black-translucent"
+  >
+
+  <title>Meu Treino · Hevy Edition</title>
+</head>
+
+<body>
+  <!-- STICKY MINI-TIMER (Hevy Rest-Timer Pill on scroll) -->
+  <aside
+    id="stickyMiniTimer"
+    class="sticky-mini-timer hidden"
+    aria-label="Temporizador de descanso em andamento"
+    aria-live="polite"
+  >
+    <div class="hevy-pill-inner">
+      <button
+        id="miniTimerJumpBtn"
+        class="hevy-pill-lead"
+        type="button"
+        aria-label="Rolar até o temporizador"
+      >
+        <!-- SVG Circular Ring -->
+        <svg class="hevy-ring-svg" width="22" height="22" viewBox="0 0 22 22">
+          <circle cx="11" cy="11" r="9" class="hevy-ring-track" stroke-width="3" fill="none" />
+          <circle id="miniTimerRingProgress" cx="11" cy="11" r="9" class="hevy-ring-fill" stroke-width="3" fill="none"
+                  stroke-dasharray="56.548" stroke-dashoffset="0" stroke-linecap="round"
+                  transform="rotate(-90 11 11)" />
+        </svg>
+        <span class="hevy-pill-text">
+          Rest · <span id="miniTimerDisplay" class="tabular-nums">00:00</span>
+        </span>
+      </button>
+
+      <div class="hevy-pill-controls">
+        <button
+          id="miniTimerToggleBtn"
+          class="hevy-pill-btn"
+          type="button"
+          aria-label="Pausar ou retomar descanso"
+        >
+          <span id="miniTimerToggleIcon" aria-hidden="true">⏸</span>
+        </button>
+        <button
+          id="miniTimerSkipBtn"
+          class="hevy-pill-btn skip-btn"
+          type="button"
+          aria-label="Pular descanso"
+        >
+          Skip
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <div class="app-shell">
+
+    <!-- HEVY ACTIVE-WORKOUT HEADER -->
+    <header class="hevy-header" id="workoutHeader">
+      <div class="hevy-top-bar">
+        <div class="hevy-title-group">
+          <p class="hevy-eyebrow" id="sessionPillTag">ARNOLD SPLIT · HOJE</p>
+          <h1 class="hevy-routine-title" id="selectedDayTitle">
+            Pernas (Foco Quadríceps) e Panturrilhas
+          </h1>
+          <p class="hevy-routine-sub" id="sessionSubtitle">
+            Dois estímulos semanais focando em corrigir assimetria e força.
+          </p>
+        </div>
+
+        <div class="hevy-header-actions">
+          <button
+            id="themeToggle"
+            class="hevy-icon-btn"
+            type="button"
+            aria-label="Alternar aparência"
+            title="Alternar tema"
+          >
+            <span id="themeIcon">☼</span>
+          </button>
+
+          <button
+            id="finishWorkoutBtn"
+            class="hevy-btn-finish"
+            type="button"
+            aria-label="Finalizar Treino"
+          >
+            Finalizar
+          </button>
+        </div>
+      </div>
+
+      <!-- 3-METRIC STRIP (Duration, Volume, Sets) -->
+      <div class="hevy-metrics-strip" id="metricsStrip">
+        <div class="hevy-stat-item">
+          <span class="hevy-stat-label">DURAÇÃO</span>
+          <span class="hevy-stat-val live-blue tabular-nums" id="workoutDuration">00:00</span>
+        </div>
+
+        <div class="hevy-stat-divider"></div>
+
+        <div class="hevy-stat-item">
+          <span class="hevy-stat-label">VOLUME</span>
+          <span class="hevy-stat-val tabular-nums" id="workoutVolume">0 kg</span>
+        </div>
+
+        <div class="hevy-stat-divider"></div>
+
+        <div class="hevy-stat-item">
+          <span class="hevy-stat-label">SÉRIES</span>
+          <span class="hevy-stat-val tabular-nums" id="workoutSets">0 / 0</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="main-content">
+
+      <!-- WEEK STRIP (Days Monday..Sunday) -->
+      <nav
+        id="dayTabs"
+        class="hevy-week-strip"
+        aria-label="Dias da semana"
+      ></nav>
+
+      <!-- REST TIMER PILL (Glanceable Hevy Rest-Timer Pill with circular SVG ring) -->
+      <section
+        id="timerCard"
+        class="hevy-rest-pill hidden"
+        aria-live="polite"
+        aria-atomic="true"
+      >
+        <div class="hevy-rest-pill-content">
+          <div class="hevy-rest-ring-wrap">
+            <svg class="hevy-ring-svg-lg" width="28" height="28" viewBox="0 0 28 28">
+              <circle cx="14" cy="14" r="11" class="hevy-ring-track" stroke-width="3" fill="none" />
+              <circle id="mainTimerRingProgress" cx="14" cy="14" r="11" class="hevy-ring-fill" stroke-width="3" fill="none"
+                      stroke-dasharray="69.115" stroke-dashoffset="0" stroke-linecap="round"
+                      transform="rotate(-90 14 14)" />
+            </svg>
+          </div>
+
+          <div class="hevy-rest-info">
+            <span class="hevy-rest-title" id="timerExercise">Descanso</span>
+            <span class="hevy-rest-digits tabular-nums" id="timerDisplay">00:00</span>
+          </div>
+
+          <div class="hevy-rest-actions">
+            <button
+              id="minus15TimerButton"
+              class="hevy-pill-btn-small"
+              type="button"
+              aria-label="Diminuir 15 segundos"
+              title="-15s"
+            >
+              -15s
+            </button>
+            <button
+              id="plus15TimerButton"
+              class="hevy-pill-btn-small"
+              type="button"
+              aria-label="Aumentar 15 segundos"
+              title="+15s"
+            >
+              +15s
+            </button>
+            <button
+              id="pauseTimerButton"
+              class="hevy-pill-btn-small"
+              type="button"
+              aria-label="Pausar descanso"
+            >
+              Pausar
+            </button>
+            <button
+              id="resumeTimerButton"
+              class="hevy-pill-btn-small hidden"
+              type="button"
+              aria-label="Retomar descanso"
+            >
+              Retomar
+            </button>
+            <button
+              id="skipTimerButton"
+              class="hevy-pill-btn-skip"
+              type="button"
+              aria-label="Pular descanso"
+            >
+              Skip
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- WORKOUT STRUCTURE / MUSCLE SPLIT BAR -->
+      <section class="hevy-section-header" id="structureSection">
+        <div class="hevy-section-title-row">
+          <span class="hevy-section-eyebrow">DISTRIBUIÇÃO MUSCULAR</span>
+          <button
+            id="resetDayButton"
+            class="hevy-link-btn"
+            type="button"
+          >
+            Redefinir
+          </button>
+        </div>
+
+        <div
+          id="workoutStructureBar"
+          class="hevy-muscle-bar"
+          aria-label="Distribuição por grupo muscular"
+        ></div>
+      </section>
+
+      <!-- WORKOUT LIST (Stacked Hevy Exercise Cards) -->
+      <section
+        id="workoutList"
+        class="hevy-workout-list"
+        aria-label="Lista de exercícios do treino"
+      ></section>
+
+      <!-- NOTES CARD -->
+      <section id="notesCard" class="hevy-card hevy-notes-card">
+        <div class="hevy-card-header">
+          <h2 class="hevy-card-title">Anotações do Treino</h2>
+        </div>
+        <textarea
+          id="dayNotes"
+          rows="3"
+          placeholder="Sensações, ajuste de banco, metas para o próximo ciclo..."
+          aria-label="Anotações do treino"
+        ></textarea>
+      </section>
+
+      <!-- SETTINGS CARD -->
+      <section id="settingsCard" class="hevy-card hevy-settings-card">
+        <div class="hevy-card-header">
+          <h2 class="hevy-card-title">Preferências</h2>
+        </div>
+
+        <div class="hevy-setting-item">
+          <div>
+            <strong>Notificações</strong>
+            <small>Aviso sonoro/notificação ao fim do descanso.</small>
+          </div>
+          <button
+            id="notificationPermissionButton"
+            class="hevy-btn-tonal"
+            type="button"
+          >
+            Permitir
+          </button>
+        </div>
+
+        <label class="hevy-setting-item">
+          <div>
+            <strong>Vibração</strong>
+            <small>Feedback tátil no celular.</small>
+          </div>
+          <input
+            id="vibrationToggle"
+            class="hevy-switch"
+            type="checkbox"
+            checked
+          >
+        </label>
+      </section>
+    </main>
+
+    <!-- TOAST NOTIFICATION -->
+    <div
+      id="toast"
+      class="toast"
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+    ></div>
+
+    <div
+      id="notificationMessage"
+      class="sr-only"
+      role="status"
+      aria-live="polite"
+    ></div>
+
+    <!-- POST-WORKOUT SUMMARY MODAL (Hevy Celebratory Sheet) -->
+    <div id="workoutSummaryModal" class="hevy-modal hidden" role="dialog" aria-modal="true" aria-labelledby="summaryModalTitle">
+      <div class="hevy-modal-scrim" id="modalScrim"></div>
+      <div class="hevy-modal-sheet">
+        <div class="hevy-modal-handle"></div>
+        <div class="hevy-modal-header">
+          <span class="hevy-pr-badge" id="summaryPrBadge">★ TREINO CONCLUÍDO</span>
+          <h2 class="hevy-modal-title" id="summaryModalTitle">Resumo da Sessão</h2>
+          <p class="hevy-modal-subtitle" id="summaryRoutineName">Pernas (Foco Quadríceps)</p>
+        </div>
+
+        <div class="hevy-summary-grid">
+          <div class="hevy-summary-box">
+            <span class="hevy-summary-label">TEMPO TOTAL</span>
+            <span class="hevy-summary-val live-blue tabular-nums" id="summaryDuration">00:00</span>
+          </div>
+
+          <div class="hevy-summary-box">
+            <span class="hevy-summary-label">VOLUME TOTAL</span>
+            <span class="hevy-summary-val tabular-nums" id="summaryVolume">0 kg</span>
+          </div>
+
+          <div class="hevy-summary-box">
+            <span class="hevy-summary-label">SÉRIES FEITAS</span>
+            <span class="hevy-summary-val tabular-nums" id="summarySets">0</span>
+          </div>
+
+          <div class="hevy-summary-box">
+            <span class="hevy-summary-label">RECORDES (PR)</span>
+            <span class="hevy-summary-val pr-gold tabular-nums" id="summaryPrCount">0</span>
+          </div>
+        </div>
+
+        <div class="hevy-modal-actions">
+          <button id="closeSummaryBtn" class="hevy-btn-primary" type="button">
+            Concluir & Salvar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- CADENCE CONSULTATION MODAL (Infográfico & Métodos de Treino) -->
+    <div id="cadenceModal" class="hevy-modal hidden" role="dialog" aria-modal="true" aria-labelledby="cadenceModalTitle">
+      <div class="hevy-modal-scrim" id="cadenceModalScrim"></div>
+      <div class="hevy-modal-sheet modal-scrollable">
+        <div class="hevy-modal-handle"></div>
+        <div class="hevy-modal-header">
+          <span class="badge-cadence-pill" id="cadenceModalBadge">⏱️ CADÊNCIA</span>
+          <h2 class="hevy-modal-title" id="cadenceModalTitle">Como Funciona a Cadência</h2>
+          <p class="hevy-modal-subtitle" id="cadenceModalSubtitle">Entenda os 4 números do tempo sob tensão</p>
+        </div>
+
+        <!-- Explicação Didática da Cadência -->
+        <div class="cadence-formula-header" id="cadenceFormulaHeader"></div>
+
+        <div class="cadence-breakdown-card" id="cadenceBreakdownCard"></div>
+
+        <div class="training-methods-section">
+          <h3 class="hevy-section-subtitle">GUIA DOS MÉTODOS DE TREINO</h3>
+          <div class="training-methods-list" id="trainingMethodsList"></div>
+        </div>
+
+        <div class="hevy-modal-actions">
+          <button id="closeCadenceBtn" class="hevy-btn-primary" type="button">
+            Entendi, Voltar ao Treino
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- EXERCISE EXECUTION & ANIMATED CADENCE COACH MODAL -->
+    <div id="executionModal" class="hevy-modal hidden" role="dialog" aria-modal="true" aria-labelledby="executionModalTitle">
+      <div class="hevy-modal-scrim" id="executionModalScrim"></div>
+      <div class="hevy-modal-sheet modal-scrollable">
+        <div class="hevy-modal-handle"></div>
+        <div class="hevy-modal-header">
+          <div class="execution-header-tags">
+            <span class="badge-cadence-pill" id="execCadenceBadge">3-1-1-0</span>
+            <span class="badge-rir" id="execRirBadge">RIR 1</span>
+          </div>
+          <h2 class="hevy-modal-title" id="executionModalTitle">Nome do Exercício</h2>
+          <p class="hevy-modal-subtitle" id="executionModalSubtitle">Treinador de Execução & Ritmo</p>
+        </div>
+
+        <!-- ANIMATED STAGE -->
+        <div class="execution-stage" id="executionStage">
+          <div class="stage-canvas-wrap">
+            <svg id="coachStageSvg" class="coach-svg" viewBox="0 0 320 220">
+              <rect x="20" y="200" width="280" height="4" rx="2" fill="#262C36" />
+              <line x1="60" y1="40" x2="60" y2="200" stroke="#1F2630" stroke-width="3" stroke-dasharray="4 4" />
+              <line x1="260" y1="40" x2="260" y2="200" stroke="#1F2630" stroke-width="3" stroke-dasharray="4 4" />
+              <rect id="coachBench" x="110" y="150" width="100" height="14" rx="4" fill="#283040" />
+              <rect id="coachBenchLeg" x="154" y="164" width="12" height="36" fill="#1F2630" />
+              <g id="coachMovingWeight" transform="translate(0, 0)">
+                <line x1="40" y1="70" x2="280" y2="70" stroke="#9BA3B0" stroke-width="5" stroke-linecap="round" />
+                <rect x="44" y="44" width="10" height="52" rx="2" fill="#1E6FFF" />
+                <rect x="56" y="50" width="8" height="40" rx="2" fill="#1857CC" />
+                <rect x="266" y="44" width="10" height="52" rx="2" fill="#1E6FFF" />
+                <rect x="256" y="50" width="8" height="40" rx="2" fill="#1857CC" />
+                <circle cx="160" cy="70" r="3" fill="#1E6FFF" />
+              </g>
+              <g id="coachLifter" transform="translate(0, 0)">
+                <circle cx="160" cy="130" r="14" fill="#5E6675" />
+                <path d="M140 160 Q160 148 180 160" stroke="#5E6675" stroke-width="12" stroke-linecap="round" fill="none" />
+                <line id="armLeft" x1="140" y1="150" x2="100" y2="70" stroke="#9BA3B0" stroke-width="6" stroke-linecap="round" />
+                <line id="armRight" x1="180" y1="150" x2="220" y2="70" stroke="#9BA3B0" stroke-width="6" stroke-linecap="round" />
+              </g>
+            </svg>
+          </div>
+
+          <!-- PHASE BANNER & PROGRESS BAR -->
+          <div class="stage-overlay">
+            <div class="phase-indicator-pill" id="coachPhasePill">
+              <span id="coachPhaseIcon">⬇️</span>
+              <span id="coachPhaseLabel">PREPARAR</span>
+              <span id="coachPhaseTimer" class="tabular-nums">3s</span>
+            </div>
+
+            <div class="phase-progress-track">
+              <div id="coachPhaseProgressBar" class="phase-progress-fill"></div>
+            </div>
+
+            <div class="stage-stats-row">
+              <div class="stage-stat">
+                <span class="stage-stat-label">REPETIÇÃO</span>
+                <span class="stage-stat-val tabular-nums" id="coachRepCounter">0 / 10</span>
+              </div>
+              <div class="stage-stat">
+                <span class="stage-stat-label">RITMO</span>
+                <span class="stage-stat-val tabular-nums" id="coachCadenceFormula">3-1-1-0</span>
+              </div>
+              <div class="stage-stat">
+                <span class="stage-stat-label">SOM</span>
+                <button type="button" id="coachSoundToggle" class="stage-sound-btn" aria-label="Ligar ou desligar som">
+                  <span id="coachSoundIcon">🔊</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- COACH CONTROLS -->
+        <div class="coach-controls-row">
+          <button id="coachStartPauseBtn" class="hevy-btn-primary coach-main-btn" type="button">
+            <span id="coachStartIcon">▶</span> Iniciar Execução
+          </button>
+          <button id="coachResetBtn" class="hevy-btn-tonal coach-reset-btn" type="button">
+            Reiniciar
+          </button>
+        </div>
+
+        <!-- TECHNIQUE & INSTRUCTIONS -->
+        <div class="coach-technique-box">
+          <h3 class="hevy-section-subtitle">TÉCNICA DE EXECUÇÃO</h3>
+          <p class="coach-technique-text" id="coachTechniqueText"></p>
+          <div class="coach-cues-grid">
+            <div class="coach-cue-item">
+              <strong>Descida (Excêntrica):</strong>
+              <span id="cueEccentric">3s controlando a carga</span>
+            </div>
+            <div class="coach-cue-item">
+              <strong>Pausa Baixa:</strong>
+              <span id="cueStretch">1s segurando o alongamento</span>
+            </div>
+            <div class="coach-cue-item">
+              <strong>Subida (Concêntrica):</strong>
+              <span id="cueConcentric">1s empurrando com explosão</span>
+            </div>
+            <div class="coach-cue-item">
+              <strong>Pausa Alta:</strong>
+              <span id="cuePeak">0s sem descansar no topo</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="hevy-modal-actions">
+          <button id="closeExecutionBtn" class="hevy-btn-secondary" type="button">
+            Voltar para o Treino
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- HEVY 5-TAB BOTTOM BAR (Home, Profile, Workout, History, Exercises) -->
+    <nav class="hevy-tab-bar" aria-label="Navegação principal">
+      <button type="button" class="hevy-tab" data-target="dayTabs" aria-label="Início">
+        <svg class="hevy-tab-icon" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+        </svg>
+        <span class="hevy-tab-label">Início</span>
+      </button>
+
+      <button type="button" class="hevy-tab" data-target="notesCard" aria-label="Perfil">
+        <svg class="hevy-tab-icon" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+        </svg>
+        <span class="hevy-tab-label">Perfil</span>
+      </button>
+
+      <button type="button" class="hevy-tab active" data-target="workoutHeader" aria-label="Treino">
+        <div class="hevy-tab-center-icon">
+          <svg class="hevy-tab-icon" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+          </svg>
+        </div>
+        <span class="hevy-tab-label">Treino</span>
+      </button>
+
+      <button type="button" class="hevy-tab" data-target="structureSection" aria-label="Histórico">
+        <svg class="hevy-tab-icon" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20a2 2 0 002 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z"/>
+        </svg>
+        <span class="hevy-tab-label">Histórico</span>
+      </button>
+
+      <button type="button" class="hevy-tab" data-target="settingsCard" aria-label="Exercícios">
+        <svg class="hevy-tab-icon" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 4.14 2.71 2.71 4.14l1.43 1.43L2 7.71l1.43 1.43L2 10.57 5.57 14.14 14.14 5.57 17.71 9.14 19.14 7.71 20.57 9.14 22 7.71l-1.43-1.43z"/>
+        </svg>
+        <span class="hevy-tab-label">Exercícios</span>
+      </button>
+    </nav>
+  </div>
+
+  <script src="./app.js"></script>
+</body>
+</html>

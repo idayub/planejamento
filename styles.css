@@ -98,6 +98,27 @@ a,
   -webkit-tap-highlight-color: transparent;
 }
 
+.hidden {
+  display: none !important;
+}
+
+/* Acessibilidade Global de Foco por Teclado (WCAG 2.4.7 Focus Visible) */
+:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+[role="button"]:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--blue) !important;
+  outline-offset: 2px !important;
+}
+
 html {
   min-width: 320px;
   min-height: 100%;
@@ -143,7 +164,7 @@ body {
   width: 100%;
   max-width: 620px;
   margin: 0 auto;
-  padding: 0 16px;
+  padding: 0 clamp(10px, 3.5vw, 16px);
   display: flex;
   flex-direction: column;
 }
@@ -183,7 +204,7 @@ body {
 }
 
 .hevy-routine-title {
-  font-size: 24px;
+  font-size: clamp(20px, 5.5vw, 24px);
   font-weight: 700;
   line-height: 1.2;
   letter-spacing: -0.4px;
@@ -207,8 +228,10 @@ body {
 }
 
 .hevy-icon-btn {
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
   border-radius: var(--radius-cell);
   border: 1px solid var(--divider);
   background: var(--input);
@@ -218,6 +241,7 @@ body {
   justify-content: center;
   font-size: 15px;
   cursor: pointer;
+  touch-action: manipulation;
   transition: transform 120ms var(--ease-out), background-color 120ms;
 }
 
@@ -231,10 +255,15 @@ body {
   color: #FFFFFF;
   font-size: 13px;
   font-weight: 700;
-  padding: 7px 16px;
+  padding: 0 16px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border-radius: var(--radius-tonal);
   border: none;
   cursor: pointer;
+  touch-action: manipulation;
   transition: background-color 120ms, transform 120ms var(--ease-out);
 }
 
@@ -247,8 +276,8 @@ body {
 .hevy-metrics-strip {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 10px 14px;
+  gap: clamp(8px, 2.5vw, 16px);
+  padding: 10px clamp(10px, 3vw, 14px);
   background-color: var(--card);
   border: 1px solid var(--divider);
   border-radius: var(--radius-pill);
@@ -259,21 +288,28 @@ body {
   flex-direction: column;
   gap: 2px;
   flex: 1;
+  min-width: 0;
 }
 
 .hevy-stat-label {
-  font-size: 11px;
+  font-size: clamp(9px, 2.5vw, 11px);
   font-weight: 600;
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .hevy-stat-val {
-  font-size: 17px;
+  font-size: clamp(14px, 4vw, 17px);
   font-weight: 700;
   line-height: 1.2;
   color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .hevy-stat-val.live-blue {
@@ -297,8 +333,8 @@ body {
 
 .hevy-week-strip {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 6px;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: clamp(3px, 1.2vw, 6px);
   padding: 2px 0 6px;
 }
 
@@ -306,11 +342,12 @@ body {
   background-color: var(--card);
   border: 1px solid var(--divider);
   border-radius: var(--radius-tonal);
-  padding: 8px 4px;
+  padding: clamp(6px, 1.5vw, 8px) clamp(2px, 0.8vw, 4px);
+  min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
   cursor: pointer;
   transition: border-color 140ms, background-color 140ms, transform 120ms;
 }
@@ -320,16 +357,22 @@ body {
 }
 
 .hevy-day-weekday {
-  font-size: 10px;
-  font-weight: 600;
+  font-size: clamp(8px, 2.4vw, 10px);
+  font-weight: 700;
   color: var(--text-secondary);
   text-transform: uppercase;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 .hevy-day-date {
-  font-size: 14px;
+  font-size: clamp(12px, 3.5vw, 14px);
   font-weight: 700;
   color: var(--text-primary);
+  white-space: nowrap;
 }
 
 .hevy-day-cell.selected {
@@ -429,7 +472,9 @@ body {
 }
 
 .hevy-pill-btn-small {
-  padding: 4px 8px;
+  position: relative;
+  padding: 6px 8px;
+  min-height: 32px;
   border-radius: var(--radius-micro);
   background: var(--input);
   border: 1px solid var(--divider);
@@ -437,7 +482,19 @@ body {
   font-size: 11px;
   font-weight: 600;
   cursor: pointer;
+  touch-action: manipulation;
   transition: background-color 120ms, color 120ms;
+}
+
+.hevy-pill-btn-small::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  height: 44px;
+  min-height: 44px;
 }
 
 .hevy-pill-btn-small:active {
@@ -450,7 +507,9 @@ body {
 }
 
 .hevy-pill-btn-skip {
-  padding: 4px 10px;
+  position: relative;
+  padding: 6px 10px;
+  min-height: 32px;
   border-radius: var(--radius-micro);
   background: transparent;
   border: 1px solid var(--ring-edge);
@@ -458,7 +517,19 @@ body {
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
+  touch-action: manipulation;
   transition: background-color 120ms, transform 120ms;
+}
+
+.hevy-pill-btn-skip::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  height: 44px;
+  min-height: 44px;
 }
 
 .hevy-pill-btn-skip:active {
@@ -537,7 +608,9 @@ body {
 }
 
 .hevy-pill-btn {
-  height: 28px;
+  position: relative;
+  height: 32px;
+  min-height: 32px;
   padding: 0 10px;
   border-radius: var(--radius-micro);
   background: var(--input);
@@ -549,6 +622,18 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  touch-action: manipulation;
+}
+
+.hevy-pill-btn::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  height: 44px;
+  min-height: 44px;
 }
 
 .hevy-pill-btn.skip-btn {
@@ -587,12 +672,18 @@ body {
 }
 
 .hevy-link-btn {
+  position: relative;
   background: transparent;
   border: none;
   color: var(--text-tertiary);
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
+  padding: 8px 10px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  touch-action: manipulation;
   transition: color 120ms;
 }
 
@@ -762,12 +853,22 @@ body {
 }
 
 .hevy-card-more {
+  position: relative;
   background: transparent;
   border: none;
   color: var(--text-tertiary);
   font-size: 18px;
   cursor: pointer;
-  padding: 0 4px;
+  padding: 0;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: manipulation;
+  border-radius: var(--radius-cell);
 }
 
 .hevy-exercise-tip {
@@ -827,6 +928,7 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.5px;
   text-align: center;
+  min-width: 0;
 }
 
 .hevy-col-head.col-set {
@@ -837,14 +939,17 @@ body {
 
 .hevy-col-head.col-prev {
   flex: 1.2;
+  min-width: 0;
 }
 
 .hevy-col-head.col-kg {
   flex: 1;
+  min-width: 0;
 }
 
 .hevy-col-head.col-reps {
   flex: 1;
+  min-width: 0;
 }
 
 .hevy-col-head.col-check {
@@ -856,9 +961,9 @@ body {
 .hevy-set-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: clamp(4px, 1.5vw, 8px);
   min-height: 40px;
-  padding: 5px 6px;
+  padding: 5px clamp(4px, 1.5vw, 6px);
   border-radius: var(--radius-cell);
   background-color: transparent;
   transition: background-color 150ms var(--ease-out);
@@ -887,16 +992,21 @@ body {
 /* Anterior */
 .hevy-col-prev {
   flex: 1.2;
+  min-width: 0;
   text-align: center;
-  font-size: 13px;
+  font-size: clamp(11px, 3.2vw, 13px);
   font-weight: 500;
   color: var(--text-tertiary);
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Editable Cells (KG and REPS) */
 .hevy-cell-input {
   flex: 1;
+  min-width: 0;
+  width: 100%;
   height: 36px;
   border-radius: var(--radius-cell);
   background-color: var(--input);
@@ -906,7 +1016,7 @@ body {
   font-weight: 600;
   text-align: center;
   outline: none;
-  padding: 0 4px;
+  padding: 0 2px;
   touch-action: manipulation;
   transition: border-color 140ms var(--ease-out), color 140ms;
 }
@@ -927,6 +1037,7 @@ body {
 
 /* Checkmark Box */
 .hevy-check-btn {
+  position: relative;
   width: 26px;
   height: 26px;
   border-radius: var(--radius-cell);
@@ -940,7 +1051,21 @@ body {
   flex-shrink: 0;
   font-size: 14px;
   font-weight: 800;
+  touch-action: manipulation;
   transition: background-color 120ms var(--ease-out), border-color 120ms var(--ease-out), transform 120ms;
+}
+
+/* Área de toque acessível expandida (mínimo 44x44px no mobile sem alterar design visual) */
+.hevy-check-btn::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
 }
 
 .hevy-check-btn:active {
@@ -1008,7 +1133,7 @@ body {
   border-radius: var(--radius-cell);
   padding: 10px 12px;
   color: var(--text-primary);
-  font-size: 14px;
+  font-size: 16px; /* 16px estritamente evita o auto-zoom automático do iOS/Safari */
   line-height: 1.4;
   outline: none;
   resize: vertical;
@@ -1016,6 +1141,18 @@ body {
 
 .hevy-notes-card textarea:focus {
   border-color: var(--blue);
+}
+
+.notes-save-badge {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--done);
+  opacity: 0;
+  transition: opacity 200ms var(--ease-out);
+}
+
+.notes-save-badge.visible {
+  opacity: 1;
 }
 
 .hevy-setting-item {
@@ -1094,11 +1231,12 @@ body {
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  transition: opacity 260ms var(--ease-out);
+  transition: opacity 260ms var(--ease-out), visibility 260ms var(--ease-out);
 }
 
 .hevy-modal.hidden {
   opacity: 0;
+  visibility: hidden;
   pointer-events: none;
 }
 
@@ -1119,7 +1257,7 @@ body {
   border-top-right-radius: var(--radius-modal);
   border: 1px solid var(--divider);
   border-bottom: none;
-  padding: 16px 20px calc(env(safe-area-inset-bottom, 20px) + 20px);
+  padding: 16px clamp(12px, 4vw, 20px) calc(env(safe-area-inset-bottom, 20px) + 20px);
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -1132,6 +1270,30 @@ body {
   transform: translateY(100%);
 }
 
+/* Apresentação como Diálogo Centralizado em Telas Maiores (Tablet / Desktop) */
+@media (min-width: 768px) {
+  .hevy-modal {
+    align-items: center;
+    padding: 24px;
+  }
+
+  .hevy-modal-sheet {
+    border-radius: var(--radius-modal);
+    border-bottom: 1px solid var(--divider);
+    padding: 24px;
+    transform: scale(1);
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.7);
+  }
+
+  .hevy-modal.hidden .hevy-modal-sheet {
+    transform: scale(0.95);
+  }
+
+  .hevy-modal-handle {
+    display: none;
+  }
+}
+
 .hevy-modal-handle {
   width: 36px;
   height: 4px;
@@ -1141,11 +1303,44 @@ body {
 }
 
 .hevy-modal-header {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
   gap: 6px;
+  padding: 4px 38px 0;
+}
+
+.hevy-modal-close-btn {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  min-height: 34px;
+  border-radius: var(--radius-round);
+  background: var(--input);
+  border: 1px solid var(--divider);
+  color: var(--text-secondary);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: manipulation;
+  transition: background-color 120ms, color 120ms, transform 120ms;
+}
+
+.hevy-modal-close-btn:hover {
+  background-color: var(--surface-3);
+  color: var(--text-primary);
+}
+
+.hevy-modal-close-btn:active {
+  transform: scale(0.92);
 }
 
 .hevy-modal-title {
@@ -1209,6 +1404,64 @@ body {
   transform: scale(0.98);
 }
 
+/* Modal de Opções do Exercício */
+.exercise-options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 8px 0 16px;
+}
+
+.hevy-option-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  background-color: var(--input);
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-cell);
+  color: var(--text-primary);
+  cursor: pointer;
+  text-align: left;
+  touch-action: manipulation;
+  transition: background-color 120ms var(--ease-out), transform 120ms;
+}
+
+.hevy-option-item:hover {
+  background-color: var(--surface-3);
+}
+
+.hevy-option-item:active {
+  transform: scale(0.98);
+}
+
+.hevy-option-item:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.hevy-option-item .option-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.hevy-option-item .option-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.hevy-option-item .option-text strong {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.hevy-option-item .option-text small {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
 /* =========================================================
    BOTTOM TAB BAR (5 Tabs: Home, Profile, Workout, History, Exercises)
    ========================================================= */
@@ -1226,12 +1479,13 @@ body {
   border-top: 0.5px solid var(--divider);
   display: flex;
   align-items: center;
-  justify-content: space-around;
+  justify-content: center;
   z-index: 900;
 }
 
 .hevy-tab {
   flex: 1;
+  max-width: 124px;
   height: 100%;
   background: transparent;
   border: none;
@@ -1321,6 +1575,7 @@ body {
    ========================================================= */
 
 .cadence-clickable-pill {
+  position: relative;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -1329,11 +1584,24 @@ body {
   color: var(--blue) !important;
   border: 1px solid rgba(30, 111, 255, 0.4) !important;
   border-radius: var(--radius-micro);
-  padding: 3px 8px;
+  padding: 4px 8px;
   font-size: 11px;
   font-weight: 700;
+  touch-action: manipulation;
   transition: all 140ms ease;
   user-select: none;
+}
+
+/* Área de toque vertical expandida para mobile */
+.cadence-clickable-pill::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  height: 44px;
+  min-height: 44px;
 }
 
 .cadence-clickable-pill:hover,
@@ -1397,24 +1665,25 @@ body {
 
 .cadence-formula-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: clamp(4px, 1.5vw, 8px);
 }
 
 .cadence-formula-col {
   background: var(--input);
   border: 1px solid var(--divider);
   border-radius: 10px;
-  padding: 10px 6px;
+  padding: 10px clamp(2px, 1vw, 6px);
   text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
+  min-width: 0;
 }
 
 .cadence-digit-num {
-  font-size: 22px;
+  font-size: clamp(17px, 5.5vw, 22px);
   font-weight: 800;
   line-height: 1;
 }
@@ -1424,16 +1693,24 @@ body {
 .cadence-digit-num.color-concentric { color: var(--done); }
 
 .cadence-digit-label {
-  font-size: 10px;
+  font-size: clamp(8px, 2.4vw, 10px);
   font-weight: 700;
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 .cadence-digit-sub {
-  font-size: 9px;
+  font-size: clamp(7.5px, 2.2vw, 9px);
   color: var(--text-tertiary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 .cadence-breakdown-card {
@@ -1573,10 +1850,11 @@ body {
   background: #080B0F;
   border: 1px solid var(--divider);
   border-radius: 16px;
-  padding: 14px 12px;
-  margin: 14px 0;
+  padding: clamp(10px, 3vw, 14px) clamp(8px, 2.5vw, 12px);
+  margin: 12px 0;
   position: relative;
   overflow: hidden;
+  max-width: 100%;
 }
 
 .stage-canvas-wrap {
@@ -1584,12 +1862,14 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
+  overflow: hidden;
 }
 
 .coach-svg {
   width: 100%;
   max-width: 320px;
-  height: 160px;
+  height: auto;
+  aspect-ratio: 320 / 160;
   display: block;
 }
 
@@ -1686,7 +1966,13 @@ body {
   border: none;
   font-size: 18px;
   cursor: pointer;
-  padding: 2px 6px;
+  padding: 4px 8px;
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: manipulation;
   border-radius: 6px;
 }
 
@@ -1699,11 +1985,15 @@ body {
 .coach-main-btn {
   flex: 2;
   height: 48px;
+  min-height: 44px;
+  touch-action: manipulation;
 }
 
 .coach-reset-btn {
   flex: 1;
   height: 48px;
+  min-height: 44px;
+  touch-action: manipulation;
 }
 
 .coach-technique-box {
@@ -1723,7 +2013,7 @@ body {
 
 .coach-cues-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(125px, 1fr));
   gap: 8px;
   margin-top: 12px;
 }

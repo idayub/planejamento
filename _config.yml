@@ -1,0 +1,13 @@
+# GitHub Pages configuration
+# Exclude documentation, scripts, and non-web assets from Jekyll builds
+exclude:
+  - docs/
+  - scripts/
+  - .github/
+  - README.md
+  - LICENSE
+  - "*.dmg"
+
+# Tell Jekyll not to process Liquid in plain assets
+markdown: kramdown
+plugins: []

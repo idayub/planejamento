@@ -686,7 +686,18 @@ const elements = {
   cueEccentric: $("#cueEccentric"),
   cueStretch: $("#cueStretch"),
   cueConcentric: $("#cueConcentric"),
-  cuePeak: $("#cuePeak")
+  cuePeak: $("#cuePeak"),
+
+  // Exercise Options Modal elements
+  exerciseOptionsModal: $("#exerciseOptionsModal"),
+  exerciseOptionsModalScrim: $("#exerciseOptionsModalScrim"),
+  closeExerciseOptionsBtn: $("#closeExerciseOptionsBtn"),
+  exerciseOptionsTitle: $("#exerciseOptionsTitle"),
+  exerciseOptionsSubtitle: $("#exerciseOptionsSubtitle"),
+  optAddSetBtn: $("#optAddSetBtn"),
+  optRemoveSetBtn: $("#optRemoveSetBtn"),
+  optCoachBtn: $("#optCoachBtn"),
+  optCadenceBtn: $("#optCadenceBtn")
 };
 
 let timerInterval = null;
@@ -765,7 +776,32 @@ function getExerciseKey(day, exerciseIndex) {
 }
 
 function getExerciseTotalSets(day, exerciseIndex, baseSets) {
-  return baseSets;
+  const key = getExerciseKey(day, exerciseIndex);
+  const extra = (state.extraSets && state.extraSets[key]) || 0;
+  return baseSets + extra;
+}
+
+function addExerciseExtraSet(day, exerciseIndex) {
+  if (!state.extraSets) state.extraSets = {};
+  const key = getExerciseKey(day, exerciseIndex);
+  state.extraSets[key] = (state.extraSets[key] || 0) + 1;
+  saveState();
+  render();
+  showToast("Série adicional adicionada!");
+}
+
+function removeExerciseExtraSet(day, exerciseIndex) {
+  if (!state.extraSets) return;
+  const key = getExerciseKey(day, exerciseIndex);
+  if (state.extraSets[key] > 0) {
+    state.extraSets[key] -= 1;
+    if (state.extraSets[key] <= 0) {
+      delete state.extraSets[key];
+    }
+    saveState();
+    render();
+    showToast("Série adicional removida.");
+  }
 }
 
 function getSetLoad(day, exerciseIndex, setIndex) {
@@ -832,7 +868,7 @@ function updateSet(day, exerciseIndex, setIndex, completed) {
   if (completed) {
     state.completed[key] = true;
     if (!state.workoutStartTime) {
-      state.workoutStartTime = Date.now();
+      state.workoutStartTime = Date.now() - (state.workoutSeconds || 0) * 1000;
     }
   } else {
     delete state.completed[key];
@@ -1062,20 +1098,29 @@ function getWeekDaysData() {
 
 function renderTabs() {
   if (!elements.dayTabs) return;
+  elements.dayTabs.setAttribute("role", "tablist");
   elements.dayTabs.innerHTML = "";
   const weekData = getWeekDaysData();
 
   weekData.forEach((item) => {
-    const cell = document.createElement("button");
-    cell.type = "button";
-    cell.className = "hevy-day-cell";
-    cell.setAttribute("aria-label", `Treino de ${DAY_LABELS[item.key]}`);
-
+    const isSelected = item.key === state.selectedDay;
     const progress = getProgress(item.key);
     const workout = getWorkout(item.key);
     const hasExercises = workout.exercises.length > 0;
 
-    if (item.key === state.selectedDay) {
+    const cell = document.createElement("button");
+    cell.type = "button";
+    cell.role = "tab";
+    cell.className = "hevy-day-cell";
+    cell.setAttribute("aria-selected", isSelected ? "true" : "false");
+    cell.setAttribute(
+      "aria-label",
+      hasExercises
+        ? `${DAY_LABELS[item.key]} (${item.weekday})`
+        : `Dia de ${DAY_LABELS[item.key]} (${item.weekday})`
+    );
+
+    if (isSelected) {
       cell.classList.add("selected");
     }
     if (progress.totalSets > 0 && progress.completedSets === progress.totalSets) {
@@ -1103,6 +1148,7 @@ function renderTabs() {
 function renderHeader() {
   const workout = getWorkout();
   const isToday = getWeekDaysData().find((d) => d.key === state.selectedDay)?.isToday;
+  const isRestDay = !workout.exercises.length;
 
   if (elements.sessionPillTag) {
     elements.sessionPillTag.textContent = isToday
@@ -1116,6 +1162,22 @@ function renderHeader() {
 
   if (elements.sessionSubtitle) {
     elements.sessionSubtitle.textContent = workout.subtitle;
+  }
+
+  if (elements.finishWorkoutBtn) {
+    if (isRestDay) {
+      elements.finishWorkoutBtn.classList.add("hidden");
+    } else {
+      elements.finishWorkoutBtn.classList.remove("hidden");
+    }
+  }
+
+  if (elements.resetDayButton) {
+    if (isRestDay) {
+      elements.resetDayButton.classList.add("hidden");
+    } else {
+      elements.resetDayButton.classList.remove("hidden");
+    }
   }
 
   updateLiveMetrics();
@@ -1270,6 +1332,17 @@ function renderWorkout() {
 
         <div class="hevy-set-rows"></div>
       </div>
+
+      <!-- HEVY CARD FOOTER (+ ADD SET) -->
+      <div class="hevy-card-footer">
+        <button
+          type="button"
+          class="hevy-btn-add-set"
+          aria-label="Adicionar série ao exercício ${escapeHTML(exercise.name)}"
+        >
+          + Adicionar Série
+        </button>
+      </div>
     `;
 
     const setRowsContainer = card.querySelector(".hevy-set-rows");
@@ -1296,7 +1369,7 @@ function renderWorkout() {
           class="hevy-cell-input input-kg tabular-nums"
           placeholder="${exLoads.previous || "0"}"
           value="${escapeHTML(currentLoad)}"
-          aria-label="Carga em kg da série ${setIndex + 1}"
+          aria-label="Carga em kg da série ${setIndex + 1} de ${escapeHTML(exercise.name)}"
         />
         <input
           type="text"
@@ -1304,12 +1377,13 @@ function renderWorkout() {
           class="hevy-cell-input input-reps tabular-nums"
           placeholder="${defaultRepsNum}"
           value="${escapeHTML(currentReps)}"
-          aria-label="Repetições da série ${setIndex + 1}"
+          aria-label="Repetições da série ${setIndex + 1} de ${escapeHTML(exercise.name)}"
         />
         <button
           type="button"
           class="hevy-check-btn"
-          aria-label="Concluir série ${setIndex + 1}"
+          aria-label="${checked ? `Desmarcar série ${setIndex + 1} de ${escapeHTML(exercise.name)}` : `Concluir série ${setIndex + 1} de ${escapeHTML(exercise.name)}`}"
+          aria-pressed="${checked ? "true" : "false"}"
         >
           ${checked ? "✓" : ""}
         </button>
@@ -1351,6 +1425,8 @@ function renderWorkout() {
         if (willComplete) {
           row.classList.add("completed");
           checkBtn.textContent = "✓";
+          checkBtn.setAttribute("aria-pressed", "true");
+          checkBtn.setAttribute("aria-label", `Desmarcar série ${setIndex + 1} de ${exercise.name}`);
           vibrateDevice();
 
           if (exercise.rest > 0) {
@@ -1363,6 +1439,8 @@ function renderWorkout() {
         } else {
           row.classList.remove("completed");
           checkBtn.textContent = "";
+          checkBtn.setAttribute("aria-pressed", "false");
+          checkBtn.setAttribute("aria-label", `Concluir série ${setIndex + 1} de ${exercise.name}`);
           showToast(`Série ${setIndex + 1} desmarcada.`);
         }
 
@@ -1370,6 +1448,23 @@ function renderWorkout() {
       });
 
       setRowsContainer.appendChild(row);
+    }
+
+    // Clique no botão + Adicionar Série
+    const addSetBtn = card.querySelector(".hevy-btn-add-set");
+    if (addSetBtn) {
+      addSetBtn.addEventListener("click", () => {
+        addExerciseExtraSet(state.selectedDay, exerciseIndex);
+      });
+    }
+
+    // Clique no botão ⋯ (Mais opções)
+    const cardMoreBtn = card.querySelector(".hevy-card-more");
+    if (cardMoreBtn) {
+      cardMoreBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        openExerciseOptionsModal(exercise, exerciseIndex);
+      });
     }
 
     // Clique no Pill de Cadência
@@ -1467,6 +1562,12 @@ function syncMiniTimer() {
 
   if (elements.miniTimerToggleIcon) {
     elements.miniTimerToggleIcon.textContent = timer.status === "running" ? "⏸" : "▶";
+  }
+  if (elements.miniTimerToggleBtn) {
+    elements.miniTimerToggleBtn.setAttribute(
+      "aria-label",
+      timer.status === "running" ? "Pausar descanso" : "Retomar descanso"
+    );
   }
 }
 
@@ -1713,13 +1814,40 @@ async function notifyRestFinished() {
   }
 }
 
+function updateNotificationButtonState() {
+  if (!elements.notificationPermissionButton) return;
+
+  if (!("Notification" in window)) {
+    elements.notificationPermissionButton.textContent = "Indisponível";
+    elements.notificationPermissionButton.disabled = true;
+    elements.notificationPermissionButton.setAttribute("aria-label", "Notificações não suportadas neste navegador");
+    return;
+  }
+
+  if (Notification.permission === "granted") {
+    elements.notificationPermissionButton.textContent = "Ativado ✓";
+    elements.notificationPermissionButton.disabled = true;
+    elements.notificationPermissionButton.setAttribute("aria-label", "Notificações ativadas");
+  } else if (Notification.permission === "denied") {
+    elements.notificationPermissionButton.textContent = "Bloqueado";
+    elements.notificationPermissionButton.disabled = true;
+    elements.notificationPermissionButton.setAttribute("aria-label", "Notificações bloqueadas no navegador");
+  } else {
+    elements.notificationPermissionButton.textContent = "Permitir";
+    elements.notificationPermissionButton.disabled = false;
+    elements.notificationPermissionButton.setAttribute("aria-label", "Permitir notificações de descanso");
+  }
+}
+
 async function requestNotifications() {
   if (!("Notification" in window)) {
     showToast("Este navegador não suporta notificações.");
+    updateNotificationButtonState();
     return;
   }
   try {
     const perm = await Notification.requestPermission();
+    updateNotificationButtonState();
     if (perm === "granted") {
       showToast("Notificações ativadas com sucesso!");
     } else {
@@ -1727,7 +1855,122 @@ async function requestNotifications() {
     }
   } catch (err) {
     showToast("Erro ao solicitar notificações.");
+    updateNotificationButtonState();
   }
+}
+
+/* =========================================================
+   GERENCIAMENTO DE MODAIS & ACESSIBILIDADE DE TECLADO
+   ========================================================= */
+
+let lastFocusedElement = null;
+
+function getOpenModal() {
+  const modals = [
+    elements.workoutSummaryModal,
+    elements.cadenceModal,
+    elements.executionModal,
+    elements.exerciseOptionsModal
+  ];
+  return modals.find((m) => m && !m.classList.contains("hidden"));
+}
+
+function trapFocusInModal(modal) {
+  if (!modal) return;
+  setTimeout(() => {
+    const focusable = Array.from(modal.querySelectorAll(
+      'button:not([disabled]):not(.hidden), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    )).filter((el) => el.offsetWidth > 0 || el.offsetHeight > 0 || el.getClientRects().length > 0);
+
+    if (focusable.length) {
+      focusable[0].focus();
+    }
+  }, 50);
+}
+
+function restoreModalFocus() {
+  if (lastFocusedElement && typeof lastFocusedElement.focus === "function") {
+    lastFocusedElement.focus();
+    lastFocusedElement = null;
+  }
+}
+
+function handleModalKeyDown(e) {
+  const openModal = getOpenModal();
+  if (!openModal) return;
+
+  if (e.key === "Escape") {
+    e.preventDefault();
+    if (openModal === elements.workoutSummaryModal) {
+      closeWorkoutSummary();
+    } else if (openModal === elements.cadenceModal) {
+      closeCadenceModal();
+    } else if (openModal === elements.executionModal) {
+      closeExecutionModal();
+    } else if (openModal === elements.exerciseOptionsModal) {
+      closeExerciseOptionsModal();
+    }
+    return;
+  }
+
+  if (e.key === "Tab") {
+    const focusable = Array.from(openModal.querySelectorAll(
+      'button:not([disabled]):not(.hidden), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    )).filter((el) => el.offsetWidth > 0 || el.offsetHeight > 0 || el.getClientRects().length > 0);
+
+    if (!focusable.length) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+
+    if (e.shiftKey) {
+      if (document.activeElement === first || !openModal.contains(document.activeElement)) {
+        e.preventDefault();
+        last.focus();
+      }
+    } else {
+      if (document.activeElement === last || !openModal.contains(document.activeElement)) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
+  }
+}
+
+let currentOptionsExercise = null;
+let currentOptionsIndex = null;
+
+function openExerciseOptionsModal(exercise, exerciseIndex) {
+  if (!elements.exerciseOptionsModal) return;
+  currentOptionsExercise = exercise;
+  currentOptionsIndex = exerciseIndex;
+
+  const key = getExerciseKey(state.selectedDay, exerciseIndex);
+  const extraCount = (state.extraSets && state.extraSets[key]) || 0;
+
+  if (elements.exerciseOptionsSubtitle) {
+    elements.exerciseOptionsSubtitle.textContent = `${exercise.name} (${exercise.sets + extraCount} séries programadas)`;
+  }
+
+  if (elements.optRemoveSetBtn) {
+    elements.optRemoveSetBtn.disabled = extraCount <= 0;
+    const smallDesc = elements.optRemoveSetBtn.querySelector("small");
+    if (smallDesc) {
+      smallDesc.textContent = extraCount > 0
+        ? `${extraCount} série(s) extra(s) adicionada(s)`
+        : "Nenhuma série extra para remover";
+    }
+  }
+
+  lastFocusedElement = document.activeElement;
+  elements.exerciseOptionsModal.classList.remove("hidden");
+  trapFocusInModal(elements.exerciseOptionsModal);
+}
+
+function closeExerciseOptionsModal() {
+  if (elements.exerciseOptionsModal) {
+    elements.exerciseOptionsModal.classList.add("hidden");
+  }
+  restoreModalFocus();
 }
 
 /* =========================================================
@@ -1736,8 +1979,16 @@ async function requestNotifications() {
 
 function openWorkoutSummary() {
   const workout = getWorkout();
+  if (!workout.exercises.length) {
+    showToast("Hoje é dia de descanso. Nenhum treino para finalizar!");
+    return;
+  }
   const progress = getProgress();
   const { totalVolume, prCount } = calculateWorkoutVolume();
+
+  if (state.workoutStartTime) {
+    state.workoutSeconds = Math.floor((Date.now() - state.workoutStartTime) / 1000);
+  }
 
   if (elements.summaryRoutineName) {
     elements.summaryRoutineName.textContent = workout.title;
@@ -1755,8 +2006,10 @@ function openWorkoutSummary() {
     elements.summaryPrCount.textContent = `${prCount} ${prCount === 1 ? "recorde" : "recordes"}`;
   }
 
+  lastFocusedElement = document.activeElement;
   if (elements.workoutSummaryModal) {
     elements.workoutSummaryModal.classList.remove("hidden");
+    trapFocusInModal(elements.workoutSummaryModal);
   }
 }
 
@@ -1764,6 +2017,18 @@ function closeWorkoutSummary() {
   if (elements.workoutSummaryModal) {
     elements.workoutSummaryModal.classList.add("hidden");
   }
+
+  // Congela o cronômetro para que o treino finalizado não continue contando tempo
+  if (state.workoutStartTime) {
+    state.workoutSeconds = Math.floor((Date.now() - state.workoutStartTime) / 1000);
+    state.workoutStartTime = null;
+    saveState();
+  }
+  if (elements.workoutDuration) {
+    elements.workoutDuration.textContent = formatDuration(state.workoutSeconds);
+  }
+
+  restoreModalFocus();
   showToast("Treino registrado! Bom descanso 💪");
 }
 
@@ -2079,13 +2344,16 @@ function openCadenceModal(exercise) {
     `).join("");
   }
 
+  lastFocusedElement = document.activeElement;
   elements.cadenceModal.classList.remove("hidden");
+  trapFocusInModal(elements.cadenceModal);
 }
 
 function closeCadenceModal() {
   if (elements.cadenceModal) {
     elements.cadenceModal.classList.add("hidden");
   }
+  restoreModalFocus();
 }
 
 /* =========================================================
@@ -2128,10 +2396,27 @@ const CadenceCoach = {
     if (elements.coachSoundToggle) {
       elements.coachSoundToggle.addEventListener("click", () => {
         this.sound = !this.sound;
-        if (elements.coachSoundIcon) {
-          elements.coachSoundIcon.textContent = this.sound ? "🔊" : "🔇";
-        }
+        this.updateSoundToggleUI();
+        showToast(this.sound ? "Som do treinador ativado." : "Som do treinador silenciado.");
       });
+      this.updateSoundToggleUI();
+    }
+  },
+
+  updateSoundToggleUI() {
+    if (elements.coachSoundIcon) {
+      elements.coachSoundIcon.textContent = this.sound ? "🔊" : "🔇";
+    }
+    if (elements.coachSoundToggle) {
+      elements.coachSoundToggle.setAttribute(
+        "aria-label",
+        this.sound ? "Silenciar áudio do treinador" : "Ativar áudio do treinador"
+      );
+      elements.coachSoundToggle.setAttribute("aria-pressed", this.sound ? "true" : "false");
+      elements.coachSoundToggle.setAttribute(
+        "title",
+        this.sound ? "Silenciar áudio" : "Ativar áudio"
+      );
     }
   },
 
@@ -2368,8 +2653,10 @@ const CadenceCoach = {
 
 function openExecutionModal(exercise) {
   if (!elements.executionModal) return;
+  lastFocusedElement = document.activeElement;
   CadenceCoach.setup(exercise);
   elements.executionModal.classList.remove("hidden");
+  trapFocusInModal(elements.executionModal);
 }
 
 function closeExecutionModal() {
@@ -2377,13 +2664,20 @@ function closeExecutionModal() {
     CadenceCoach.stop();
     elements.executionModal.classList.add("hidden");
   }
+  restoreModalFocus();
 }
 
 function resetDay() {
-  const confirmed = window.confirm(`Redefinir o treino de ${DAY_LABELS[state.selectedDay]}?`);
-  if (!confirmed) return;
-
   const workout = getWorkout(state.selectedDay);
+  if (!workout.exercises.length) {
+    showToast("Hoje é dia de descanso. Nenhum exercício para redefinir.");
+    return;
+  }
+
+  const confirmed = window.confirm(
+    `Redefinir o treino de ${DAY_LABELS[state.selectedDay]}?\n\nTodas as séries concluídas deste dia serão desmarcadas e as cargas atuais serão salvas como base anterior para o próximo ciclo.`
+  );
+  if (!confirmed) return;
 
   workout.exercises.forEach((exercise, exerciseIndex) => {
     const exKey = getExerciseKey(state.selectedDay, exerciseIndex);
@@ -2422,22 +2716,31 @@ function resetDay() {
    TEMA (DARK HEVY DEFAULT / LIGHT OPÇÃO)
    ========================================================= */
 
+function applyThemeUI(theme) {
+  const isDark = theme === "dark";
+  if (elements.themeIcon) {
+    elements.themeIcon.textContent = isDark ? "☼" : "☾";
+  }
+  if (elements.themeToggle) {
+    const nextDesc = isDark ? "Mudar para tema claro" : "Mudar para tema escuro";
+    elements.themeToggle.setAttribute("aria-label", nextDesc);
+    elements.themeToggle.setAttribute("title", nextDesc);
+  }
+}
+
 function toggleTheme() {
   const current = document.documentElement.dataset.theme || "dark";
   const next = current === "dark" ? "light" : "dark";
   document.documentElement.dataset.theme = next;
   localStorage.setItem(THEME_KEY, next);
-  if (elements.themeIcon) {
-    elements.themeIcon.textContent = next === "dark" ? "☼" : "☾";
-  }
+  applyThemeUI(next);
+  showToast(next === "dark" ? "Tema escuro ativado." : "Tema claro ativado.");
 }
 
 function restoreTheme() {
   const saved = localStorage.getItem(THEME_KEY) || "dark";
   document.documentElement.dataset.theme = saved;
-  if (elements.themeIcon) {
-    elements.themeIcon.textContent = saved === "dark" ? "☼" : "☾";
-  }
+  applyThemeUI(saved);
 }
 
 /* =========================================================
@@ -2456,6 +2759,10 @@ function setupEvents() {
   if (elements.closeSummaryBtn) {
     elements.closeSummaryBtn.addEventListener("click", closeWorkoutSummary);
   }
+  const dismissSummaryBtn = $("#dismissSummaryModalBtn");
+  if (dismissSummaryBtn) {
+    dismissSummaryBtn.addEventListener("click", closeWorkoutSummary);
+  }
 
   if (elements.modalScrim) {
     elements.modalScrim.addEventListener("click", closeWorkoutSummary);
@@ -2465,6 +2772,10 @@ function setupEvents() {
   if (elements.closeCadenceBtn) {
     elements.closeCadenceBtn.addEventListener("click", closeCadenceModal);
   }
+  const dismissCadenceBtn = $("#dismissCadenceModalBtn");
+  if (dismissCadenceBtn) {
+    dismissCadenceBtn.addEventListener("click", closeCadenceModal);
+  }
   if (elements.cadenceModalScrim) {
     elements.cadenceModalScrim.addEventListener("click", closeCadenceModal);
   }
@@ -2473,8 +2784,58 @@ function setupEvents() {
   if (elements.closeExecutionBtn) {
     elements.closeExecutionBtn.addEventListener("click", closeExecutionModal);
   }
+  const dismissExecutionBtn = $("#dismissExecutionModalBtn");
+  if (dismissExecutionBtn) {
+    dismissExecutionBtn.addEventListener("click", closeExecutionModal);
+  }
   if (elements.executionModalScrim) {
     elements.executionModalScrim.addEventListener("click", closeExecutionModal);
+  }
+
+  // Exercise Options Modal Listeners
+  if (elements.closeExerciseOptionsBtn) {
+    elements.closeExerciseOptionsBtn.addEventListener("click", closeExerciseOptionsModal);
+  }
+  const dismissOptionsBtn = $("#dismissExerciseOptionsModalBtn");
+  if (dismissOptionsBtn) {
+    dismissOptionsBtn.addEventListener("click", closeExerciseOptionsModal);
+  }
+  if (elements.exerciseOptionsModalScrim) {
+    elements.exerciseOptionsModalScrim.addEventListener("click", closeExerciseOptionsModal);
+  }
+  if (elements.optAddSetBtn) {
+    elements.optAddSetBtn.addEventListener("click", () => {
+      if (currentOptionsIndex !== null) {
+        addExerciseExtraSet(state.selectedDay, currentOptionsIndex);
+        closeExerciseOptionsModal();
+      }
+    });
+  }
+  if (elements.optRemoveSetBtn) {
+    elements.optRemoveSetBtn.addEventListener("click", () => {
+      if (currentOptionsIndex !== null) {
+        removeExerciseExtraSet(state.selectedDay, currentOptionsIndex);
+        closeExerciseOptionsModal();
+      }
+    });
+  }
+  if (elements.optCoachBtn) {
+    elements.optCoachBtn.addEventListener("click", () => {
+      if (currentOptionsExercise) {
+        const ex = currentOptionsExercise;
+        closeExerciseOptionsModal();
+        openExecutionModal(ex);
+      }
+    });
+  }
+  if (elements.optCadenceBtn) {
+    elements.optCadenceBtn.addEventListener("click", () => {
+      if (currentOptionsExercise) {
+        const ex = currentOptionsExercise;
+        closeExerciseOptionsModal();
+        openCadenceModal(ex);
+      }
+    });
   }
 
   CadenceCoach.init();
@@ -2534,11 +2895,26 @@ function setupEvents() {
     });
   }
 
-  // Anotações
+  // Anotações com indicador visual de salvamento automático
   if (elements.dayNotes) {
+    let notesSaveTimer = null;
+    const saveBadge = document.getElementById("notesSaveIndicator");
+
     elements.dayNotes.addEventListener("input", () => {
       state.notes[state.selectedDay] = elements.dayNotes.value;
       saveState();
+
+      if (saveBadge) {
+        saveBadge.textContent = "Salvando...";
+        saveBadge.classList.add("visible");
+        clearTimeout(notesSaveTimer);
+        notesSaveTimer = setTimeout(() => {
+          saveBadge.textContent = "Salvo ✓";
+          setTimeout(() => {
+            saveBadge.classList.remove("visible");
+          }, 1500);
+        }, 400);
+      }
     });
   }
 
@@ -2556,6 +2932,7 @@ function setupEvents() {
   });
 
   window.addEventListener("beforeunload", saveState);
+  window.addEventListener("keydown", handleModalKeyDown);
 
   // Abas de Navegação Hevy Inferiores (5 abas)
   const bottomTabs = document.querySelectorAll(".hevy-tab");
@@ -2602,6 +2979,7 @@ function render() {
   renderStructureBar();
   renderWorkout();
   renderTimer();
+  updateNotificationButtonState();
 }
 
 /* =========================================================

@@ -260,6 +260,7 @@
       <section id="notesCard" class="hevy-card hevy-notes-card">
         <div class="hevy-card-header">
           <h2 class="hevy-card-title">Anotações do Treino</h2>
+          <span id="notesSaveIndicator" class="notes-save-badge" aria-live="polite">Salvo ✓</span>
         </div>
         <textarea
           id="dayNotes"
@@ -326,6 +327,7 @@
       <div class="hevy-modal-sheet">
         <div class="hevy-modal-handle"></div>
         <div class="hevy-modal-header">
+          <button type="button" class="hevy-modal-close-btn" id="dismissSummaryModalBtn" aria-label="Fechar resumo da sessão">✕</button>
           <span class="hevy-pr-badge" id="summaryPrBadge">★ TREINO CONCLUÍDO</span>
           <h2 class="hevy-modal-title" id="summaryModalTitle">Resumo da Sessão</h2>
           <p class="hevy-modal-subtitle" id="summaryRoutineName">Pernas (Foco Quadríceps)</p>
@@ -367,6 +369,7 @@
       <div class="hevy-modal-sheet modal-scrollable">
         <div class="hevy-modal-handle"></div>
         <div class="hevy-modal-header">
+          <button type="button" class="hevy-modal-close-btn" id="dismissCadenceModalBtn" aria-label="Fechar guia de cadência">✕</button>
           <span class="badge-cadence-pill" id="cadenceModalBadge">⏱️ CADÊNCIA</span>
           <h2 class="hevy-modal-title" id="cadenceModalTitle">Como Funciona a Cadência</h2>
           <p class="hevy-modal-subtitle" id="cadenceModalSubtitle">Entenda os 4 números do tempo sob tensão</p>
@@ -396,6 +399,7 @@
       <div class="hevy-modal-sheet modal-scrollable">
         <div class="hevy-modal-handle"></div>
         <div class="hevy-modal-header">
+          <button type="button" class="hevy-modal-close-btn" id="dismissExecutionModalBtn" aria-label="Fechar treinador de execução">✕</button>
           <div class="execution-header-tags">
             <span class="badge-cadence-pill" id="execCadenceBadge">3-1-1-0</span>
             <span class="badge-rir" id="execRirBadge">RIR 1</span>
@@ -498,6 +502,54 @@
         <div class="hevy-modal-actions">
           <button id="closeExecutionBtn" class="hevy-btn-secondary" type="button">
             Voltar para o Treino
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- EXERCISE OPTIONS MODAL (Card More Options) -->
+    <div id="exerciseOptionsModal" class="hevy-modal hidden" role="dialog" aria-modal="true" aria-labelledby="exerciseOptionsTitle">
+      <div class="hevy-modal-scrim" id="exerciseOptionsModalScrim"></div>
+      <div class="hevy-modal-sheet">
+        <div class="hevy-modal-handle"></div>
+        <div class="hevy-modal-header">
+          <button type="button" class="hevy-modal-close-btn" id="dismissExerciseOptionsModalBtn" aria-label="Fechar opções do exercício">✕</button>
+          <h2 class="hevy-modal-title" id="exerciseOptionsTitle">Opções do Exercício</h2>
+          <p class="hevy-modal-subtitle" id="exerciseOptionsSubtitle">Gerencie as séries e consulte a execução</p>
+        </div>
+        <div class="exercise-options-list">
+          <button type="button" id="optAddSetBtn" class="hevy-option-item">
+            <span class="option-icon" aria-hidden="true">➕</span>
+            <div class="option-text">
+              <strong>Adicionar Série</strong>
+              <small>Inclui uma série adicional neste exercício</small>
+            </div>
+          </button>
+          <button type="button" id="optRemoveSetBtn" class="hevy-option-item">
+            <span class="option-icon" aria-hidden="true">➖</span>
+            <div class="option-text">
+              <strong>Remover Última Série Extra</strong>
+              <small>Exclui a série adicional adicionada</small>
+            </div>
+          </button>
+          <button type="button" id="optCoachBtn" class="hevy-option-item">
+            <span class="option-icon" aria-hidden="true">▶️</span>
+            <div class="option-text">
+              <strong>Treinador de Execução & Ritmo</strong>
+              <small>Ver animação visual da cadência</small>
+            </div>
+          </button>
+          <button type="button" id="optCadenceBtn" class="hevy-option-item">
+            <span class="option-icon" aria-hidden="true">⏱️</span>
+            <div class="option-text">
+              <strong>Consultar Cadência</strong>
+              <small>Entender a fórmula dos 4 tempos sob tensão</small>
+            </div>
+          </button>
+        </div>
+        <div class="hevy-modal-actions">
+          <button id="closeExerciseOptionsBtn" class="hevy-btn-secondary" type="button">
+            Fechar
           </button>
         </div>
       </div>
